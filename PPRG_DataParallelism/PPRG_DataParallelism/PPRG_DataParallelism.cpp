@@ -1,36 +1,30 @@
 #include "tga.h"
 #include <omp.h>
 #include <stdio.h>
+#include <chrono>
+#include <iostream>
 
-#define NUM_THREADS 4
+#define NUM_THREADS 5
 
-#define MAX_ITERATIONS 50
+#define MAX_ITERATIONS 1000
 
 typedef struct {
 	char r, g, b;
 } Pixel;
 
-#define WIDTH 800
-#define HEIGHT 600
+#define WIDTH 1024
+#define HEIGHT 1024
 #define BPP 24
 
-#define MIN_X 0
-#define MAX_X WIDTH - 1
-#define MIN_Y 0
-#define MAX_Y HEIGHT - 1
+#define MIN_X -2
+#define MAX_X  1
+#define MIN_Y -1
+#define MAX_Y  1
 
-void helloWorld()
-{
-#pragma omp parallel num_threads(NUM_THREADS)
-	{
-		int ID = omp_get_thread_num();
-		printf("hello(%d)", ID);
-		printf(" world(%d)", ID);
-	}
-}
+float normalize(int actual, int min, int max, int numberofpixel) {
 
-float normalize(int actual, int min, int max) {
-	return (float)actual / (float)max;
+	int range = max - min;
+	return min + (float)range / (float)numberofpixel * actual;
 }
 
 float hue2rgb(float p, float q, float t) {
@@ -64,7 +58,7 @@ Pixel hsl2Pixel(float h, float s, float l) {
 }
 
 Pixel calcPix(int px, int py) {
-	float cx = normalize(px, MIN_X, MAX_X), cy = normalize(py, MIN_Y, MAX_Y);
+	float cx = normalize(px, MIN_X, MAX_X,WIDTH), cy = normalize(py, MIN_Y, MAX_Y, HEIGHT);
 	float zx = cx;
 	float zy = cy;
 	for (int n = 0; n < MAX_ITERATIONS; n++) {
@@ -87,8 +81,10 @@ Pixel calcPix(int px, int py) {
 	return p;
 }
 
-void renderFrame_serial()
+int renderFrame_serial()
 {
+	auto start_time = std::chrono::high_resolution_clock::now();
+
 	tga::TGAImage image;
 
 	image.bpp = BPP;
@@ -106,18 +102,77 @@ void renderFrame_serial()
 	for (int py = 0; py < HEIGHT; ++py)
 		for (int px = 0; px < WIDTH; ++px)
 		{
-			image.imageData[currentByte++] = calcPix(px, py).r;
-			image.imageData[currentByte++] = calcPix(px, py).g;
-			image.imageData[currentByte++] = calcPix(px, py).b;
+			Pixel p = calcPix(px, py);
+			image.imageData[currentByte++] = p.r;
+			image.imageData[currentByte++] = p.g;
+			image.imageData[currentByte++] = p.b;
 		}
 
+	auto end_time = std::chrono::high_resolution_clock::now();
+	auto time = end_time - start_time;
+
+	std::cout << "serial took" << time / std::chrono::milliseconds(1) << "ms to run.\n" << std::endl;
+
 	tga::saveTGA(image, "test.tga");
+
+	return time / std::chrono::milliseconds(1);
+}
+
+int renderFrame_parallel()
+{
+	auto start_time = std::chrono::high_resolution_clock::now();
+	tga::TGAImage image;
+
+	image.bpp = BPP;
+	image.width = WIDTH;
+	image.height = HEIGHT;
+
+	int bytesPerPixel = (BPP / 8);
+
+	int imageSize = (bytesPerPixel * WIDTH * HEIGHT);
+
+	image.imageData = std::vector<unsigned char>(imageSize);
+
+	int currentByte = 0;
+
+	omp_set_num_threads(NUM_THREADS);
+
+	#pragma omp parallel for
+	for (int i = 0; i < HEIGHT * WIDTH; i++)
+	{
+		int px = i % WIDTH;
+		int py = i / HEIGHT;
+
+		Pixel p = calcPix(px, py);
+		image.imageData[i*3] = p.r;
+		image.imageData[i * 3 +1] = p.g;
+		image.imageData[i * 3 +2] = p.b;
+	}
+
+	auto end_time = std::chrono::high_resolution_clock::now();
+	auto time = end_time - start_time;
+
+	std::cout << "parallel took" << time / std::chrono::milliseconds(1) << "ms to run.\n" << std::endl;
+
+	tga::saveTGA(image, "test.tga");
+
+	return time / std::chrono::milliseconds(1);
 }
 
 int main()
 {
-	//helloWorld();
-	renderFrame_serial();
+	int serialtimes =0, paralleltimes =0, runs =10;
+
+	for (int i = 0; i < runs;i++) {
+
+		serialtimes += renderFrame_serial();
+		paralleltimes +=renderFrame_parallel();
+
+	}
+
+	std::cout << "serial took on average " << serialtimes / runs << "ms to run.\n" << std::endl;
+	std::cout << "parallel took on average " << paralleltimes / runs << "ms to run.\n" << std::endl;
+
 	return 0;
 }
 
