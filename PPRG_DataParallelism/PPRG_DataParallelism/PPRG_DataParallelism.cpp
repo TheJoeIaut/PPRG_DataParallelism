@@ -14,6 +14,11 @@ typedef struct {
 #define HEIGHT 600
 #define BPP 24
 
+#define MIN_X 0
+#define MAX_X WIDTH - 1
+#define MIN_Y 0
+#define MAX_Y HEIGHT - 1
+
 void helloWorld()
 {
 #pragma omp parallel num_threads(NUM_THREADS)
@@ -59,7 +64,7 @@ Pixel hsl2Pixel(float h, float s, float l) {
 }
 
 Pixel calcPix(int px, int py) {
-	float cx = normalize(px, 0, WIDTH - 1), cy = normalize(py, 0, HEIGHT - 1);
+	float cx = normalize(px, MIN_X, MAX_X), cy = normalize(py, MIN_Y, MAX_Y);
 	float zx = cx;
 	float zy = cy;
 	for (int n = 0; n < MAX_ITERATIONS; n++) {
@@ -67,8 +72,7 @@ Pixel calcPix(int px, int py) {
 		float y = (zy * zx + zx * zy) + cy;
 		if ((x * x + y * y) > 4) {
 			// diverge , produce nice color
-			// Todo: paint pixel px, py in a color depending on n
-			
+			// paint pixel px, py in a color depending on n
 			float hue = (float)n / (float)MAX_ITERATIONS;
 			return hsl2Pixel(hue, 0.7, 0.7);
 		}
