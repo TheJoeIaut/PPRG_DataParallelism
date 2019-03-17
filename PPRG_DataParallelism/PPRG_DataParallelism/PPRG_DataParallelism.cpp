@@ -1,21 +1,39 @@
-// PPRG_DataParallelism.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
+#include <omp.h>
+#include <stdio.h>
 
-#include "pch.h"
-#include <iostream>
+#define NUM_THREADS 4
+
+void helloWorld()
+{
+#pragma omp parallel num_threads(NUM_THREADS)
+	{
+		int ID = omp_get_thread_num();
+		printf("hello(%d)", ID);
+		printf(" world(%d)", ID);
+	}
+}
+
+//void calcPix(int px, int py) {
+//	float cx, cy = normalizeToViewRectangle(px, py, minx, miny, maxx, maxy);
+//	float zx = cx;
+//	float zy = cy;
+//	for (int n = 0; n < maxIterations; n++) {
+//		float x = (zx * zx - zy * zy) + cx;
+//		float y = (zy * zx + zx * zy) + cy;
+//		if ((x * x + y * y) > 4) {
+//			// diverge , produce nice color
+//			// Todo: paint pixel px, py in a color depending on n
+//				return;
+//		}
+//		zx = x;
+//		zy = y;
+//	}
+//	// Todo: paint pixel px, py black // in the set
+//}
 
 int main()
 {
-    std::cout << "Hello World!\n"; 
+	helloWorld();
+	return 0;
 }
 
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
