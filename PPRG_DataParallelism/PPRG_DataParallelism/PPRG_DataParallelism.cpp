@@ -3,23 +3,24 @@
 #include <stdio.h>
 #include <chrono>
 #include <iostream>
+#include <sstream>
 
 #define NUM_THREADS 5
 
-#define MAX_ITERATIONS 1000
+int MAX_ITERATIONS = 1000;
 
 typedef struct {
 	char r, g, b;
 } Pixel;
 
-#define WIDTH 1024
-#define HEIGHT 1024
-#define BPP 24
+int WIDTH = 1024;
+int HEIGHT = 1024;
+int BPP = 24;
 
-#define MIN_X -2
-#define MAX_X  1
-#define MIN_Y -1
-#define MAX_Y  1
+float MIN_X = -2.0f;
+float MAX_X = 1.0f;
+float MIN_Y = -1.0f;
+float MAX_Y = 1.0f;
 
 float normalize(int actual, int min, int max, int numberofpixel) {
 
@@ -159,19 +160,45 @@ int renderFrame_parallel()
 	return time / std::chrono::milliseconds(1);
 }
 
-int main()
+int main(int argc, char* argv[])
 {
-	int serialtimes =0, paralleltimes =0, runs =10;
-
-	for (int i = 0; i < runs;i++) {
-
-		serialtimes += renderFrame_serial();
-		paralleltimes +=renderFrame_parallel();
-
+	// Check the number of parameters
+	if (argc != 7) {
+		// Tell the user how to run the program
+		std::cerr << "Usage: " << argv[0] << " DIMENSIONS VP_MIN_X VP_MAX_X VP_MIN_Y VP_MAX_Y ITERATIONS" << std::endl;
+		return 1;
 	}
 
-	std::cout << "serial took on average " << serialtimes / runs << "ms to run.\n" << std::endl;
-	std::cout << "parallel took on average " << paralleltimes / runs << "ms to run.\n" << std::endl;
+	
+	int dim = atoi(argv[1]);
+	
+	WIDTH = dim;
+	HEIGHT = dim;
+
+	MIN_X = atof(argv[2]);
+	MAX_X = atof(argv[3]);
+	MIN_Y = atof(argv[4]);
+	MAX_Y = atof(argv[5]);
+
+	MAX_ITERATIONS = atoi(argv[6]);
+
+	renderFrame_parallel();
+
+	/**
+	 * performance testing
+	 */
+
+	//int serialtimes =0, paralleltimes =0, runs =1;
+
+	//for (int i = 0; i < runs;i++) {
+
+		//serialtimes += renderFrame_serial();
+		//paralleltimes +=renderFrame_parallel();
+
+	//}
+
+	//std::cout << "serial took on average " << serialtimes / runs << "ms to run.\n" << std::endl;
+	//std::cout << "parallel took on average " << paralleltimes / runs << "ms to run.\n" << std::endl;
 
 	return 0;
 }

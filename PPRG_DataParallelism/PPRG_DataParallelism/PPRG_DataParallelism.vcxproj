@@ -159,6 +159,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="PPRG_DataParallelism.h" />
     <ClInclude Include="tga.h" />
   </ItemGroup>
   <ItemGroup>
